@@ -24,7 +24,7 @@ export interface SidecarConfig {
 const DEFAULT_CONFIG: SidecarConfig = {
   port: parseInt(process.env.EMBEDDING_SIDECAR_PORT ?? '', 10) || 8787,
   host: '127.0.0.1',
-  model: process.env.EMBEDDING_MODEL ?? 'Qodo/Qodo-Embed-1-1.5B',
+  model: process.env.EMBEDDING_MODEL ?? 'Qwen/Qwen3-Embedding-0.6B',
   startupTimeoutMs: 120_000, // 2 min — first run downloads the model
   requestTimeoutMs: 60_000,
   idleTimeoutMs: 180_000, // 3 min — auto-shutdown after no requests

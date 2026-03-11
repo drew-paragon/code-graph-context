@@ -147,7 +147,7 @@ model that starts automatically on first use.
 
 | Env Variable | Default | Description |
 |---|---|---|
-| `EMBEDDING_MODEL` | `Qodo/Qodo-Embed-1-1.5B` | HuggingFace model for local embeddings |
+| `EMBEDDING_MODEL` | `Qwen/Qwen3-Embedding-0.6B` | HuggingFace model for local embeddings |
 | `OPENAI_ENABLED` | `false` | Set `true` to use OpenAI instead of local |
 | `OPENAI_API_KEY` | — | Required when OPENAI_ENABLED=true |
 | `EMBEDDING_SIDECAR_PORT` | `8787` | Port for the local embedding server |
@@ -156,7 +156,8 @@ model that starts automatically on first use.
 
 | Model | Dims | RAM | Quality | Best for |
 |---|---|---|---|---|
-| `Qodo/Qodo-Embed-1-1.5B` | 1536 | ~9 GB | Best | Machines with 32+ GB RAM |
+| `Qwen/Qwen3-Embedding-0.6B` | 1024 | ~1.2 GB | Best | Default, code-aware, MTEB-Code #1 |
+| `Qodo/Qodo-Embed-1-1.5B` | 1536 | ~9 GB | Great | Machines with 32+ GB RAM |
 | `BAAI/bge-base-en-v1.5` | 768 | ~500 MB | Good | General purpose, low RAM |
 | `sentence-transformers/all-MiniLM-L6-v2` | 384 | ~200 MB | OK | Minimal RAM, fast |
 | `nomic-ai/nomic-embed-text-v1.5` | 768 | ~600 MB | Good | Code + prose mixed |
@@ -178,7 +179,7 @@ NEO4J_USER=neo4j
 NEO4J_PASSWORD=PASSWORD
 
 # Optional — local embeddings work without any of these
-EMBEDDING_MODEL=Qodo/Qodo-Embed-1-1.5B
+EMBEDDING_MODEL=Qwen/Qwen3-Embedding-0.6B
 OPENAI_ENABLED=true
 OPENAI_API_KEY=sk-...
 ```

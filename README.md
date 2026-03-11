@@ -189,9 +189,9 @@ If you prefer to edit the config files directly:
 | `NEO4J_URI` | No | `bolt://localhost:7687` | Neo4j connection URI |
 | `NEO4J_USER` | No | `neo4j` | Neo4j username |
 | `NEO4J_PASSWORD` | No | `PASSWORD` | Neo4j password |
-| `EMBEDDING_MODEL` | No | `Qodo/Qodo-Embed-1-1.5B` | Local embedding model (see [Embedding Configuration](#embedding-configuration)) |
+| `EMBEDDING_MODEL` | No | `Qwen/Qwen3-Embedding-0.6B` | Local embedding model (see [Embedding Configuration](#embedding-configuration)) |
 | `EMBEDDING_SIDECAR_PORT` | No | `8787` | Port for local embedding server |
-| `EMBEDDING_FULL_PRECISION` | No | `false` | Set `true` for float32 (uses ~2x memory) |
+| `EMBEDDING_HALF_PRECISION` | No | `false` | Set `true` for float16 (uses ~0.5x memory) |
 | `OPENAI_ENABLED` | No | `false` | Set `true` to use OpenAI instead of local |
 | `OPENAI_API_KEY` | No* | - | Required when `OPENAI_ENABLED=true` |
 
@@ -538,7 +538,7 @@ Local embeddings are the default — **no API key needed**. The Python sidecar s
 
 The sidecar uses **float16 (half precision)** by default, which halves memory usage with no meaningful quality loss. It also auto-shuts down after 3 minutes of inactivity to free memory, and restarts lazily when needed (~15-20s).
 
-> **Full precision mode:** If you have 32+ GB RAM and want float32, set `EMBEDDING_FULL_PRECISION=true`.
+> **Half precision mode:** To reduce memory usage at the cost of some accuracy, set `EMBEDDING_HALF_PRECISION=true`.
 
 ### Available Models
 
@@ -546,7 +546,8 @@ Set via the `EMBEDDING_MODEL` environment variable:
 
 | Model | Dimensions | RAM (fp16) | Quality | Best For |
 |-------|-----------|-----|---------|----------|
-| `Qodo/Qodo-Embed-1-1.5B` (default) | 1536 | ~4.5 GB | Best | Default, works on 16GB machines |
+| `Qwen/Qwen3-Embedding-0.6B` (default) | 1024 | ~1.2 GB | Best | Default, code-aware, MTEB-Code #1 |
+| `Qodo/Qodo-Embed-1-1.5B` | 1536 | ~4.5 GB | Great | Machines with 32+ GB RAM |
 | `BAAI/bge-base-en-v1.5` | 768 | ~250 MB | Good | General purpose, low RAM |
 | `sentence-transformers/all-MiniLM-L6-v2` | 384 | ~100 MB | OK | Minimal RAM, fast |
 | `nomic-ai/nomic-embed-text-v1.5` | 768 | ~300 MB | Good | Code + prose mixed |

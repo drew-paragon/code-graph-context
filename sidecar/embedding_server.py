@@ -1,6 +1,6 @@
 """
 Local embedding server for code-graph-context.
-Uses Qodo-Embed-1-1.5B for high-quality code embeddings without OpenAI dependency.
+Uses Qwen3-Embedding-0.6B for high-quality code embeddings without OpenAI dependency.
 Runs as a sidecar process managed by the Node.js MCP server.
 """
 
@@ -27,7 +27,7 @@ logger.info(f"Sidecar process starting (pid={os.getpid()})")
 app = FastAPI(title="code-graph-context embedding sidecar")
 
 model = None
-model_name = os.environ.get("EMBEDDING_MODEL", "Qodo/Qodo-Embed-1-1.5B")
+model_name = os.environ.get("EMBEDDING_MODEL", "Qwen/Qwen3-Embedding-0.6B")
 
 
 class EmbedRequest(BaseModel):
@@ -52,7 +52,7 @@ def load_model():
         logger.info(f"Loading {model_name} on {device}...")
         logger.info(f"PyTorch version: {torch.__version__}, MPS available: {torch.backends.mps.is_available()}")
 
-        use_half = os.environ.get("EMBEDDING_FULL_PRECISION", "").lower() != "true"
+        use_half = os.environ.get("EMBEDDING_HALF_PRECISION", "").lower() == "true"
         model = SentenceTransformer(model_name, device=device)
         if use_half:
             model.half()
