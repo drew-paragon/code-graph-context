@@ -191,6 +191,7 @@ If you prefer to edit the config files directly:
 | `NEO4J_PASSWORD` | No | `PASSWORD` | Neo4j password |
 | `EMBEDDING_MODEL` | No | `Qwen/Qwen3-Embedding-0.6B` | Local embedding model (see [Embedding Configuration](#embedding-configuration)) |
 | `EMBEDDING_SIDECAR_PORT` | No | `8787` | Port for local embedding server |
+| `EMBEDDING_DEVICE` | No | `cpu` | Device for embeddings (`cpu` or `mps`). CPU is default to avoid MPS memory bloat |
 | `EMBEDDING_HALF_PRECISION` | No | `false` | Set `true` for float16 (uses ~0.5x memory) |
 | `OPENAI_ENABLED` | No | `false` | Set `true` to use OpenAI instead of local |
 | `OPENAI_API_KEY` | No* | - | Required when `OPENAI_ENABLED=true` |
@@ -536,9 +537,11 @@ This enables queries like "find all hooks that use context" while maintaining AS
 
 Local embeddings are the default — **no API key needed**. The Python sidecar starts automatically on first use and runs a local model for high-quality code embeddings.
 
-The sidecar uses **float16 (half precision)** by default, which halves memory usage with no meaningful quality loss. It also auto-shuts down after 3 minutes of inactivity to free memory, and restarts lazily when needed (~15-20s).
+The sidecar runs on **CPU by default** to avoid MPS memory pool bloat on Apple Silicon (MPS can pre-allocate 10+ GB even for small models). CPU is fast enough for models under 1B params. It also auto-shuts down after 3 minutes of inactivity to free memory, and restarts lazily when needed (~15-20s).
 
-> **Half precision mode:** To reduce memory usage at the cost of some accuracy, set `EMBEDDING_HALF_PRECISION=true`.
+> **GPU acceleration:** Set `EMBEDDING_DEVICE=mps` to use Apple Silicon GPU for larger models (1B+ params). Only recommended on machines with 32+ GB RAM.
+>
+> **Half precision:** Set `EMBEDDING_HALF_PRECISION=true` to load the model in float16, roughly halving memory usage.
 
 ### Available Models
 

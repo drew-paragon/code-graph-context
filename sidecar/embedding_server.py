@@ -48,16 +48,23 @@ def load_model():
         import torch
         from sentence_transformers import SentenceTransformer
 
-        device = "mps" if torch.backends.mps.is_available() else "cpu"
+        # Use CPU by default — MPS pre-allocates a massive memory pool (10+ GB)
+        # that bloats small models. CPU on Apple Silicon is fast enough for <1B models.
+        # Set EMBEDDING_DEVICE=mps to force GPU if needed for large models.
+        device_override = os.environ.get("EMBEDDING_DEVICE", "").lower()
+        if device_override:
+            device = device_override
+        else:
+            device = "cpu"
         logger.info(f"Loading {model_name} on {device}...")
         logger.info(f"PyTorch version: {torch.__version__}, MPS available: {torch.backends.mps.is_available()}")
 
         use_half = os.environ.get("EMBEDDING_HALF_PRECISION", "").lower() == "true"
-        model = SentenceTransformer(model_name, device=device)
         if use_half:
-            model.half()
+            model = SentenceTransformer(model_name, device=device, model_kwargs={"torch_dtype": "float16"})
             logger.info(f"Model loaded in float16 (half precision)")
         else:
+            model = SentenceTransformer(model_name, device=device)
             logger.info(f"Model loaded in float32 (full precision)")
         logger.info(f"Running warmup...")
 
@@ -114,7 +121,6 @@ async def embed(req: EmbedRequest):
 def _encode_with_oom_fallback(texts: list[str], batch_size: int) -> list[list[float]]:
     """
     Encode texts, falling back to CPU if MPS runs out of memory.
-    Also retries with smaller batch sizes before giving up.
     """
     import torch
 
@@ -126,28 +132,18 @@ def _encode_with_oom_fallback(texts: list[str], batch_size: int) -> list[list[fl
                 show_progress_bar=False,
                 normalize_embeddings=True,
             )
-        # Free intermediate tensors after each request
-        if hasattr(torch.mps, "empty_cache"):
-            torch.mps.empty_cache()
         return result.tolist()
-    except (torch.mps.OutOfMemoryError, RuntimeError) as e:
+    except (RuntimeError,) as e:
         if "out of memory" not in str(e).lower():
             raise
 
-        logger.warning(f"MPS OOM with batch_size={batch_size}, len={len(texts)}. Falling back to CPU.")
-
-        # Free MPS memory
-        if hasattr(torch.mps, "empty_cache"):
-            torch.mps.empty_cache()
+        logger.warning(f"OOM with batch_size={batch_size}, len={len(texts)}. Falling back to CPU.")
         gc.collect()
 
-        # Fall back to CPU for this request
         original_device = model.device
         model.to("cpu")
-        logger.info("Model moved to CPU for fallback encoding")
 
         try:
-            # Use smaller batches on CPU
             cpu_batch = min(batch_size, 4)
             with torch.no_grad():
                 result = model.encode(
@@ -159,12 +155,10 @@ def _encode_with_oom_fallback(texts: list[str], batch_size: int) -> list[list[fl
             logger.info(f"CPU fallback encoding complete ({len(texts)} texts)")
             return result.tolist()
         finally:
-            # Move back to MPS for future requests
             try:
                 model.to(original_device)
-                logger.info(f"Model moved back to {original_device}")
             except Exception:
-                logger.warning("Could not move model back to MPS, staying on CPU")
+                logger.warning("Could not move model back, staying on CPU")
 
 
 def handle_signal(sig, _frame):

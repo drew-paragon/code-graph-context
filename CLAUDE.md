@@ -148,9 +148,11 @@ model that starts automatically on first use.
 | Env Variable | Default | Description |
 |---|---|---|
 | `EMBEDDING_MODEL` | `Qwen/Qwen3-Embedding-0.6B` | HuggingFace model for local embeddings |
+| `EMBEDDING_DEVICE` | `cpu` | Device for embeddings (`cpu` or `mps`). CPU default avoids MPS memory bloat |
+| `EMBEDDING_HALF_PRECISION` | `false` | Set `true` for float16 (halves memory) |
+| `EMBEDDING_SIDECAR_PORT` | `8787` | Port for the local embedding server |
 | `OPENAI_ENABLED` | `false` | Set `true` to use OpenAI instead of local |
 | `OPENAI_API_KEY` | — | Required when OPENAI_ENABLED=true |
-| `EMBEDDING_SIDECAR_PORT` | `8787` | Port for the local embedding server |
 
 **Available local models (set via EMBEDDING_MODEL):**
 
