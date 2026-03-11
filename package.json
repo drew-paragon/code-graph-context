@@ -1,6 +1,6 @@
 {
   "name": "code-graph-context",
-  "version": "2.10.3",
+  "version": "2.10.4",
   "description": "MCP server that builds code graphs to provide rich context to LLMs",
   "type": "module",
   "homepage": "https://github.com/drewdrewH/code-graph-context#readme",
