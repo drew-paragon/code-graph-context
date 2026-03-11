@@ -166,8 +166,9 @@ export class GraphGeneratorHandler {
     // Batch embed all texts that need it
     if (nodesNeedingEmbedding.length > 0) {
       const texts = nodesNeedingEmbedding.map((n) => n.text);
-      const totalBatches = Math.ceil(texts.length / EMBEDDING_BATCH_CONFIG.maxBatchSize);
-      console.error(`[embedding] Starting ${texts.length} texts in ${totalBatches} batches (batch_size=${EMBEDDING_BATCH_CONFIG.maxBatchSize})`);
+      const effectiveBatchSize = parseInt(process.env.EMBEDDING_BATCH_SIZE ?? '', 10) || EMBEDDING_BATCH_CONFIG.maxBatchSize;
+      const totalBatches = Math.ceil(texts.length / effectiveBatchSize);
+      console.error(`[embedding] Starting ${texts.length} texts in ~${totalBatches} batches (effective_batch_size=${effectiveBatchSize}, config_max=${EMBEDDING_BATCH_CONFIG.maxBatchSize})`);
 
       try {
         const embeddings = await this.embeddingsService.embedTextsInBatches(texts, EMBEDDING_BATCH_CONFIG.maxBatchSize);

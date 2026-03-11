@@ -217,7 +217,9 @@ export class EmbeddingSidecar {
         return data.status === 'ok';
       }
       return false;
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[embedding-sidecar] Health check failed: ${msg}`);
       return false;
     }
   }
@@ -230,6 +232,7 @@ export class EmbeddingSidecar {
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs);
+    const startTime = Date.now();
 
     try {
       const res = await fetch(`${this.baseUrl}/embed`, {
@@ -250,20 +253,23 @@ export class EmbeddingSidecar {
           await this.stop();
         }
 
+        console.error(`[embedding-sidecar] Embed failed after ${Date.now() - startTime}ms: status=${res.status}, texts=${texts.length}, oom=${isOOM}, detail=${detail}`);
         throw new Error(`Sidecar embed failed (${res.status}): ${detail}`);
       }
 
       const data = (await res.json()) as { embeddings: number[][]; dimensions: number };
       if (data.dimensions) this._dimensions = data.dimensions;
+      console.error(`[embedding-sidecar] Embedded ${texts.length} texts in ${Date.now() - startTime}ms (dims=${data.dimensions})`);
       this.resetIdleTimer();
       return data.embeddings;
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
-        // Timeout likely means the sidecar is stuck — kill it
-        console.error('[embedding-sidecar] Request timed out, restarting sidecar');
+        console.error(`[embedding-sidecar] Request timed out after ${Date.now() - startTime}ms (limit=${this.config.requestTimeoutMs}ms, texts=${texts.length}), restarting sidecar`);
         await this.stop();
         throw new Error(`Embedding request timed out after ${this.config.requestTimeoutMs}ms`);
       }
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[embedding-sidecar] Embed error after ${Date.now() - startTime}ms: ${msg} (url=${this.baseUrl}, running=${this.isRunning}, texts=${texts.length})`);
       throw err;
     } finally {
       clearTimeout(timeout);

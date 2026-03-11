@@ -9,7 +9,7 @@ import { debugLog } from '../../mcp/utils.js';
 import { getEmbeddingSidecar } from './embedding-sidecar.js';
 
 const BATCH_CONFIG = {
-  maxBatchSize: parseInt(process.env.EMBEDDING_BATCH_SIZE ?? '', 10) || 16,
+  maxBatchSize: parseInt(process.env.EMBEDDING_BATCH_SIZE ?? '', 10) || 8,
 } as const;
 
 export class LocalEmbeddingsService {
@@ -52,7 +52,7 @@ export class LocalEmbeddingsService {
         results.push(...batchResults);
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        console.error(`[embedding] Batch ${batchIndex}/${totalBatches} FAILED: ${msg}`);
+        console.error(`[embedding] Batch ${batchIndex}/${totalBatches} FAILED (${batch.length} texts, batchSize=${safeBatchSize}): ${msg}`);
         throw error;
       }
     }

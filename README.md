@@ -190,7 +190,7 @@ If you prefer to edit the config files directly:
 | `NEO4J_USER` | No | `neo4j` | Neo4j username |
 | `NEO4J_PASSWORD` | No | `PASSWORD` | Neo4j password |
 | `EMBEDDING_MODEL` | No | `codesage/codesage-base-v2` | Local embedding model (see [Embedding Configuration](#embedding-configuration)) |
-| `EMBEDDING_BATCH_SIZE` | No | `16` | Texts per embedding batch (lower = less memory, higher = faster) |
+| `EMBEDDING_BATCH_SIZE` | No | `8` | Texts per embedding batch (lower = less memory, higher = faster) |
 | `EMBEDDING_SIDECAR_PORT` | No | `8787` | Port for local embedding server |
 | `EMBEDDING_DEVICE` | No | auto (`mps`/`cpu`) | Device for embeddings. Auto-detects MPS on Apple Silicon |
 | `EMBEDDING_HALF_PRECISION` | No | `false` | Set `true` for float16 (uses ~0.5x memory) |

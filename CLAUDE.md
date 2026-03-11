@@ -150,7 +150,7 @@ model that starts automatically on first use.
 | `EMBEDDING_MODEL` | `codesage/codesage-base-v2` | HuggingFace model for local embeddings |
 | `EMBEDDING_DEVICE` | `mps`/`cpu` | Device for embeddings. Auto-detects MPS on Apple Silicon |
 | `EMBEDDING_HALF_PRECISION` | `false` | Set `true` for float16 (halves memory) |
-| `EMBEDDING_BATCH_SIZE` | `16` | Texts per embedding batch (lower = less memory, higher = faster) |
+| `EMBEDDING_BATCH_SIZE` | `8` | Texts per embedding batch (lower = less memory, higher = faster) |
 | `EMBEDDING_SIDECAR_PORT` | `8787` | Port for the local embedding server |
 | `OPENAI_ENABLED` | `false` | Set `true` to use OpenAI instead of local |
 | `OPENAI_API_KEY` | — | Required when OPENAI_ENABLED=true |
