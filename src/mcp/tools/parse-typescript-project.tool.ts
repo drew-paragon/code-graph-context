@@ -14,6 +14,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import { CORE_TYPESCRIPT_SCHEMA } from '../../core/config/schema.js';
+import { stopEmbeddingSidecar } from '../../core/embeddings/embedding-sidecar.js';
 import { EmbeddingsService } from '../../core/embeddings/embeddings.service.js';
 import { ParserFactory, ProjectType } from '../../core/parsers/parser-factory.js';
 import { detectChangedFiles } from '../../core/utils/file-change-detection.js';
@@ -213,6 +214,7 @@ export const createParseTypescriptProjectTool = (server: McpServer): void => {
             const job = jobManager.getJob(jobId);
             if (job && job.status === 'running') {
               jobManager.failJob(jobId, `Worker timed out after ${PARSING.workerTimeoutMs / 60000} minutes`);
+              await stopEmbeddingSidecar();
               await terminateWorker('timeout');
             }
           }, PARSING.workerTimeoutMs);
@@ -230,6 +232,7 @@ export const createParseTypescriptProjectTool = (server: McpServer): void => {
               clearTimeout(timeoutId);
               jobManager.failJob(jobId, msg.error);
               debugLog('Async parsing failed', { jobId, error: msg.error });
+              stopEmbeddingSidecar();
               terminateWorker('error');
             }
           });
@@ -239,6 +242,7 @@ export const createParseTypescriptProjectTool = (server: McpServer): void => {
             clearTimeout(timeoutId);
             jobManager.failJob(jobId, err.message ?? String(err));
             console.error('Worker thread error:', err);
+            stopEmbeddingSidecar();
             terminateWorker('worker-error');
           });
 
@@ -452,6 +456,9 @@ export const createParseTypescriptProjectTool = (server: McpServer): void => {
           });
           await debugLog('Project status updated to failed', { projectId: finalProjectId });
 
+          // Stop sidecar to free memory (restarts lazily on next embed request)
+          await stopEmbeddingSidecar();
+
           return createSuccessResponse(
             formatParsePartialSuccess(nodes.length, edges.length, outputPath, neo4jError.message),
           );
@@ -459,6 +466,8 @@ export const createParseTypescriptProjectTool = (server: McpServer): void => {
       } catch (error) {
         console.error('Parse tool error:', error);
         await debugLog('Parse tool error', { projectPath, tsconfigPath, error });
+        // Stop sidecar to free memory (restarts lazily on next embed request)
+        await stopEmbeddingSidecar();
         return createErrorResponse(error);
       }
     },

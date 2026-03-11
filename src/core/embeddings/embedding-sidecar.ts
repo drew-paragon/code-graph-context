@@ -18,6 +18,7 @@ export interface SidecarConfig {
   model: string;
   startupTimeoutMs: number;
   requestTimeoutMs: number;
+  idleTimeoutMs: number;
 }
 
 const DEFAULT_CONFIG: SidecarConfig = {
@@ -26,6 +27,7 @@ const DEFAULT_CONFIG: SidecarConfig = {
   model: process.env.EMBEDDING_MODEL ?? 'Qodo/Qodo-Embed-1-1.5B',
   startupTimeoutMs: 120_000, // 2 min — first run downloads the model
   requestTimeoutMs: 60_000,
+  idleTimeoutMs: 180_000, // 3 min — auto-shutdown after no requests
 };
 
 export class EmbeddingSidecar {
@@ -35,6 +37,7 @@ export class EmbeddingSidecar {
   private _dimensions: number | null = null;
   private stopping = false;
   private _exitHandler: (() => void) | null = null;
+  private _idleTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(config: Partial<SidecarConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -252,6 +255,7 @@ export class EmbeddingSidecar {
 
       const data = (await res.json()) as { embeddings: number[][]; dimensions: number };
       if (data.dimensions) this._dimensions = data.dimensions;
+      this.resetIdleTimer();
       return data.embeddings;
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
@@ -303,7 +307,21 @@ export class EmbeddingSidecar {
     this.cleanup();
   }
 
+  private resetIdleTimer(): void {
+    if (this._idleTimer) clearTimeout(this._idleTimer);
+    this._idleTimer = setTimeout(() => {
+      console.error(`[embedding-sidecar] Idle for ${this.config.idleTimeoutMs / 1000}s, shutting down to free memory`);
+      this.stop();
+    }, this.config.idleTimeoutMs);
+    // Don't let the timer prevent Node from exiting
+    this._idleTimer.unref();
+  }
+
   private cleanup(): void {
+    if (this._idleTimer) {
+      clearTimeout(this._idleTimer);
+      this._idleTimer = null;
+    }
     if (this._exitHandler) {
       process.removeListener('exit', this._exitHandler);
       this._exitHandler = null;

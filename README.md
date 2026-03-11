@@ -191,6 +191,7 @@ If you prefer to edit the config files directly:
 | `NEO4J_PASSWORD` | No | `PASSWORD` | Neo4j password |
 | `EMBEDDING_MODEL` | No | `Qodo/Qodo-Embed-1-1.5B` | Local embedding model (see [Embedding Configuration](#embedding-configuration)) |
 | `EMBEDDING_SIDECAR_PORT` | No | `8787` | Port for local embedding server |
+| `EMBEDDING_FULL_PRECISION` | No | `false` | Set `true` for float32 (uses ~2x memory) |
 | `OPENAI_ENABLED` | No | `false` | Set `true` to use OpenAI instead of local |
 | `OPENAI_API_KEY` | No* | - | Required when `OPENAI_ENABLED=true` |
 
@@ -535,20 +536,24 @@ This enables queries like "find all hooks that use context" while maintaining AS
 
 Local embeddings are the default — **no API key needed**. The Python sidecar starts automatically on first use and runs a local model for high-quality code embeddings.
 
+The sidecar uses **float16 (half precision)** by default, which halves memory usage with no meaningful quality loss. It also auto-shuts down after 3 minutes of inactivity to free memory, and restarts lazily when needed (~15-20s).
+
+> **Full precision mode:** If you have 32+ GB RAM and want float32, set `EMBEDDING_FULL_PRECISION=true`.
+
 ### Available Models
 
 Set via the `EMBEDDING_MODEL` environment variable:
 
-| Model | Dimensions | RAM | Quality | Best For |
+| Model | Dimensions | RAM (fp16) | Quality | Best For |
 |-------|-----------|-----|---------|----------|
-| `Qodo/Qodo-Embed-1-1.5B` (default) | 1536 | ~9 GB | Best | Machines with 32+ GB RAM |
-| `BAAI/bge-base-en-v1.5` | 768 | ~500 MB | Good | General purpose, low RAM |
-| `sentence-transformers/all-MiniLM-L6-v2` | 384 | ~200 MB | OK | Minimal RAM, fast |
-| `nomic-ai/nomic-embed-text-v1.5` | 768 | ~600 MB | Good | Code + prose mixed |
-| `sentence-transformers/all-mpnet-base-v2` | 768 | ~500 MB | Good | Balanced quality/speed |
-| `BAAI/bge-small-en-v1.5` | 384 | ~130 MB | OK | Smallest footprint |
+| `Qodo/Qodo-Embed-1-1.5B` (default) | 1536 | ~4.5 GB | Best | Default, works on 16GB machines |
+| `BAAI/bge-base-en-v1.5` | 768 | ~250 MB | Good | General purpose, low RAM |
+| `sentence-transformers/all-MiniLM-L6-v2` | 384 | ~100 MB | OK | Minimal RAM, fast |
+| `nomic-ai/nomic-embed-text-v1.5` | 768 | ~300 MB | Good | Code + prose mixed |
+| `sentence-transformers/all-mpnet-base-v2` | 768 | ~250 MB | Good | Balanced quality/speed |
+| `BAAI/bge-small-en-v1.5` | 384 | ~65 MB | OK | Smallest footprint |
 
-**Example:** Use a lightweight model on a 16GB machine:
+**Example:** Use a lightweight model on a low-memory machine:
 ```bash
 claude mcp add --scope user code-graph-context \
   -e EMBEDDING_MODEL=BAAI/bge-base-en-v1.5 \

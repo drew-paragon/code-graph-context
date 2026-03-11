@@ -52,8 +52,14 @@ def load_model():
         logger.info(f"Loading {model_name} on {device}...")
         logger.info(f"PyTorch version: {torch.__version__}, MPS available: {torch.backends.mps.is_available()}")
 
+        use_half = os.environ.get("EMBEDDING_FULL_PRECISION", "").lower() != "true"
         model = SentenceTransformer(model_name, device=device)
-        logger.info(f"Model loaded into memory, running warmup...")
+        if use_half:
+            model.half()
+            logger.info(f"Model loaded in float16 (half precision)")
+        else:
+            logger.info(f"Model loaded in float32 (full precision)")
+        logger.info(f"Running warmup...")
 
         # Warm up with a test embedding
         with torch.no_grad():
