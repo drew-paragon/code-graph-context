@@ -74,6 +74,10 @@ const DELETE_PHEROMONE_QUERY = `
   RETURN count(p) as deleted
 `;
 
+const BY_FILE_PATH = `MATCH (n:SourceFile)
+     WHERE n.projectId = $projectId AND n.filePath ENDS WITH $filePath
+     RETURN n.id as nodeId LIMIT 1`;
+
 export const createSwarmPheromoneTool = (server: McpServer): void => {
   server.registerTool(
     TOOL_NAMES.swarmPheromone,
@@ -82,7 +86,11 @@ export const createSwarmPheromoneTool = (server: McpServer): void => {
       description: TOOL_METADATA[TOOL_NAMES.swarmPheromone].description,
       inputSchema: {
         projectId: z.string().describe('Project ID, name, or path (e.g., "backend" or "proj_a1b2c3d4e5f6")'),
-        nodeId: z.string().describe('The code node ID to mark with a pheromone'),
+        nodeId: z.string().optional().describe('The code node ID to mark with a pheromone'),
+        filePath: z
+          .string()
+          .optional()
+          .describe('File path to mark (alternative to nodeId — auto-resolves to SourceFile node)'),
         type: z
           .enum(PHEROMONE_TYPES as [string, ...string[]])
           .describe(
@@ -112,8 +120,22 @@ export const createSwarmPheromoneTool = (server: McpServer): void => {
           .describe('If true, removes the pheromone instead of creating/updating it'),
       },
     },
-    async ({ projectId, nodeId, type, intensity = 1.0, agentId, swarmId, sessionId, data, remove = false }) => {
+    async ({
+      projectId,
+      nodeId,
+      filePath,
+      type,
+      intensity = 1.0,
+      agentId,
+      swarmId,
+      sessionId,
+      data,
+      remove = false,
+    }) => {
       const neo4jService = new Neo4jService();
+      if (!nodeId && !filePath) {
+        return createErrorResponse(new Error('nodeId or filePath required'));
+      }
 
       // Resolve project ID
       const projectResult = await resolveProjectIdOrError(projectId, neo4jService);
@@ -124,6 +146,21 @@ export const createSwarmPheromoneTool = (server: McpServer): void => {
       const resolvedProjectId = projectResult.projectId;
 
       try {
+        // Resolve filePath to nodeId before any queries that need it
+        let resolvedFromFilePath = false;
+        let linkedToNode = true;
+        if (!nodeId && filePath) {
+          const records = await neo4jService.run(BY_FILE_PATH, { projectId: resolvedProjectId, filePath });
+          if (records[0]?.nodeId) {
+            nodeId = records[0].nodeId;
+          } else {
+            // No graph node — use filePath as identifier so pheromone is still created
+            nodeId = filePath;
+            linkedToNode = false;
+          }
+          resolvedFromFilePath = true;
+        }
+
         if (remove) {
           const result = await neo4jService.run(DELETE_PHEROMONE_QUERY, {
             projectId: resolvedProjectId,

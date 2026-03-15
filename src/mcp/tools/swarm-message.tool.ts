@@ -181,10 +181,7 @@ export const createSwarmMessageTool = (server: McpServer): void => {
           .describe('Action: send (post message), read (get messages), acknowledge (mark as read)'),
 
         // Send parameters
-        toAgentId: z
-          .string()
-          .optional()
-          .describe('Target agent ID. Omit for broadcast to all swarm agents.'),
+        toAgentId: z.string().optional().describe('Target agent ID. Omit for broadcast to all swarm agents.'),
         category: z
           .enum(MESSAGE_CATEGORY_KEYS)
           .optional()
@@ -192,18 +189,9 @@ export const createSwarmMessageTool = (server: McpServer): void => {
             'Message category: blocked (need help), conflict (resource clash), finding (important discovery), ' +
               'request (direct ask), alert (urgent notification), handoff (context transfer)',
           ),
-        content: z
-          .string()
-          .optional()
-          .describe('Message content (required for send action)'),
-        taskId: z
-          .string()
-          .optional()
-          .describe('Related task ID for context'),
-        filePaths: z
-          .array(z.string())
-          .optional()
-          .describe('File paths relevant to this message'),
+        content: z.string().optional().describe('Message content (required for send action)'),
+        taskId: z.string().optional().describe('Related task ID for context'),
+        filePaths: z.array(z.string()).optional().describe('File paths relevant to this message'),
         ttlMs: z
           .number()
           .int()
@@ -211,19 +199,9 @@ export const createSwarmMessageTool = (server: McpServer): void => {
           .describe(`Time-to-live in ms (default: ${MESSAGE_DEFAULT_TTL_MS / 3600000}h). Set 0 for swarm lifetime.`),
 
         // Read parameters
-        unreadOnly: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe('Only return unread messages (default: true)'),
-        categories: z
-          .array(z.enum(MESSAGE_CATEGORY_KEYS))
-          .optional()
-          .describe('Filter by message categories'),
-        fromAgentId: z
-          .string()
-          .optional()
-          .describe('Filter messages from a specific agent'),
+        unreadOnly: z.boolean().optional().default(true).describe('Only return unread messages (default: true)'),
+        categories: z.array(z.enum(MESSAGE_CATEGORY_KEYS)).optional().describe('Filter by message categories'),
+        fromAgentId: z.string().optional().describe('Filter messages from a specific agent'),
         limit: z
           .number()
           .int()
@@ -240,11 +218,7 @@ export const createSwarmMessageTool = (server: McpServer): void => {
           .describe('Specific message IDs to acknowledge. Omit to acknowledge all unread.'),
 
         // Maintenance
-        cleanup: z
-          .boolean()
-          .optional()
-          .default(false)
-          .describe('Also clean up expired messages'),
+        cleanup: z.boolean().optional().default(false).describe('Also clean up expired messages'),
       },
     },
     async ({
@@ -315,7 +289,8 @@ export const createSwarmMessageTool = (server: McpServer): void => {
           }
 
           const msg = result[0];
-          const ts = typeof msg.timestamp === 'object' && msg.timestamp?.toNumber ? msg.timestamp.toNumber() : msg.timestamp;
+          const ts =
+            typeof msg.timestamp === 'object' && msg.timestamp?.toNumber ? msg.timestamp.toNumber() : msg.timestamp;
 
           return createSuccessResponse(
             JSON.stringify({
@@ -398,9 +373,10 @@ export const createSwarmMessageTool = (server: McpServer): void => {
               agentId,
             });
 
-            const count = typeof result[0]?.acknowledged === 'object'
-              ? result[0].acknowledged.toNumber()
-              : result[0]?.acknowledged ?? 0;
+            const count =
+              typeof result[0]?.acknowledged === 'object'
+                ? result[0].acknowledged.toNumber()
+                : (result[0]?.acknowledged ?? 0);
 
             return createSuccessResponse(
               JSON.stringify({

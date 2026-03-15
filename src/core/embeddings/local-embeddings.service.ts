@@ -28,18 +28,23 @@ export class LocalEmbeddingsService {
     return sidecar.embed(texts);
   }
 
-  async embedTextsInBatches(
-    texts: string[],
-    _batchSize?: number,
-  ): Promise<(number[] | null)[]> {
+  async embedTextsInBatches(texts: string[], _batchSize?: number): Promise<(number[] | null)[]> {
     if (texts.length === 0) return [];
 
     const gpuBatchSize = BATCH_CONFIG.maxBatchSize;
     const httpLimit = BATCH_CONFIG.httpBatchLimit;
     const httpBatches = Math.ceil(texts.length / httpLimit);
     const gpuBatchesPerRequest = Math.ceil(httpLimit / gpuBatchSize);
-    console.error(`[embedding] ${texts.length} texts → ${httpBatches} HTTP requests (http_limit=${httpLimit}, gpu_batch_size=${gpuBatchSize}, ~${gpuBatchesPerRequest} GPU batches/req)`);
-    await debugLog('Batch embedding started', { provider: 'local', textCount: texts.length, gpuBatchSize, httpLimit, httpBatches });
+    console.error(
+      `[embedding] ${texts.length} texts → ${httpBatches} HTTP requests (http_limit=${httpLimit}, gpu_batch_size=${gpuBatchSize}, ~${gpuBatchesPerRequest} GPU batches/req)`,
+    );
+    await debugLog('Batch embedding started', {
+      provider: 'local',
+      textCount: texts.length,
+      gpuBatchSize,
+      httpLimit,
+      httpBatches,
+    });
 
     const sidecar = getEmbeddingSidecar();
     const allResults: (number[] | null)[] = [];
@@ -56,7 +61,9 @@ export class LocalEmbeddingsService {
         }
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        console.error(`[embedding] FAILED HTTP batch ${batchNum}/${httpBatches} (${batch.length} texts, gpuBatchSize=${gpuBatchSize}): ${msg}`);
+        console.error(
+          `[embedding] FAILED HTTP batch ${batchNum}/${httpBatches} (${batch.length} texts, gpuBatchSize=${gpuBatchSize}): ${msg}`,
+        );
         throw error;
       }
     }

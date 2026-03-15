@@ -209,10 +209,17 @@ const installSidecarDeps = (sidecarDir: string): Promise<boolean> => {
 const verifySidecar = (sidecarDir: string): Promise<boolean> => {
   return new Promise((resolve) => {
     const python = getSidecarPython(sidecarDir);
-    const test = spawnProcess(python, ['-c', `import transformers.modeling_utils as _mu; hasattr(_mu,"Conv1D") or setattr(_mu,"Conv1D",__import__("transformers.pytorch_utils",fromlist=["Conv1D"]).Conv1D); from sentence_transformers import SentenceTransformer; print("ok")`], {
-      cwd: sidecarDir,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+    const test = spawnProcess(
+      python,
+      [
+        '-c',
+        `import transformers.modeling_utils as _mu; hasattr(_mu,"Conv1D") or setattr(_mu,"Conv1D",__import__("transformers.pytorch_utils",fromlist=["Conv1D"]).Conv1D); from sentence_transformers import SentenceTransformer; print("ok")`,
+      ],
+      {
+        cwd: sidecarDir,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      },
+    );
 
     let stdout = '';
     test.stdout?.on('data', (d: Buffer) => (stdout += d.toString()));

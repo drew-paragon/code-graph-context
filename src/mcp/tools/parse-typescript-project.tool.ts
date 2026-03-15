@@ -25,7 +25,15 @@ import {
   UPDATE_PROJECT_STATUS_QUERY,
 } from '../../core/utils/project-id.js';
 import { Neo4jService, QUERIES } from '../../storage/neo4j/neo4j.service.js';
-import { TOOL_NAMES, TOOL_METADATA, DEFAULTS, FILE_PATHS, LOG_CONFIG, PARSING } from '../constants.js';
+import {
+  TOOL_NAMES,
+  TOOL_METADATA,
+  DEFAULTS,
+  FILE_PATHS,
+  LOG_CONFIG,
+  PARSING,
+  CONFIG_FILE_PATTERNS,
+} from '../constants.js';
 import {
   CrossFileEdge,
   deleteSourceFileSubgraphs,
@@ -92,6 +100,11 @@ export const createParseTypescriptProjectTool = (server: McpServer): void => {
       inputSchema: {
         projectPath: z.string().describe('Path to the TypeScript project root directory'),
         tsconfigPath: z.string().describe('Path to TypeScript project tsconfig.json file'),
+        configFileGlobs: z
+          .array(z.string())
+          .optional()
+          .describe('Custom glob patterns for config files (default: all JSON, YAML, .env, Dockerfile, .sh, .py)')
+          .default(CONFIG_FILE_PATTERNS.defaultGlobs),
         projectId: z
           .string()
           .optional()
@@ -137,6 +150,7 @@ export const createParseTypescriptProjectTool = (server: McpServer): void => {
       tsconfigPath,
       projectPath,
       projectId,
+      configFileGlobs,
       clearExisting,
       projectType = 'auto',
       chunkSize = 100,
@@ -192,6 +206,7 @@ export const createParseTypescriptProjectTool = (server: McpServer): void => {
               projectId: resolvedProjectId,
               projectType,
               chunkSize: chunkSize > 0 ? chunkSize : 50,
+              configFileGlobs,
             },
             resourceLimits: {
               maxOldGenerationSizeMb: 8192, // 8GB heap for large monorepos
@@ -318,6 +333,17 @@ export const createParseTypescriptProjectTool = (server: McpServer): void => {
 
             await debugLog('Streaming import completed', result);
 
+            // Ingest config files
+            const configResult = await graphGeneratorHandler.ingestConfigFiles(
+              projectPath,
+              resolvedProjectId,
+              configFileGlobs,
+              CONFIG_FILE_PATTERNS.excludeGlobs,
+              CONFIG_FILE_PATTERNS.maxFileSizeBytes,
+            );
+            result.nodesImported += configResult.nodesCreated;
+            await debugLog('Config file ingestion completed', { nodesCreated: configResult.nodesCreated });
+
             // Update Project node status to complete
             await neo4jService.run(UPDATE_PROJECT_STATUS_QUERY, {
               projectId: resolvedProjectId,
@@ -402,6 +428,17 @@ export const createParseTypescriptProjectTool = (server: McpServer): void => {
 
           console.error('Graph generation completed:', result);
           await debugLog('Neo4j import completed', result);
+
+          // Ingest config files
+          const configResult = await graphGeneratorHandler.ingestConfigFiles(
+            projectPath,
+            finalProjectId,
+            configFileGlobs,
+            CONFIG_FILE_PATTERNS.excludeGlobs,
+            CONFIG_FILE_PATTERNS.maxFileSizeBytes,
+          );
+          result.nodesImported += configResult.nodesCreated;
+          await debugLog('Config file ingestion completed', { nodesCreated: configResult.nodesCreated });
 
           // Update Project node status to complete
           await neo4jService.run(UPDATE_PROJECT_STATUS_QUERY, {

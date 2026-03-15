@@ -460,3 +460,31 @@ export const MESSAGES = {
     startingServer: 'Starting MCP server...',
   },
 } as const;
+
+export const CONFIG_FILE_PATTERNS = {
+  defaultGlobs: [
+    'docker-compose*.{yml,yaml}',
+    'Dockerfile*',
+    '**/*.json', // All JSON files (package.json, tsconfig.json, .mcp.json, etc.)
+    '**/*.{yml,yaml}', // All YAML files (CI configs, k8s manifests, etc.)
+    '**/*.toml', // Cargo.toml, pyproject.toml, etc.
+    '**/*.cfg', // Python setup.cfg, etc.
+    '**/*.ini', // INI config files
+    '**/Makefile', // Makefiles
+    '.env*',
+    '**/*.sh', // Shell scripts
+    '**/*.py', // Python files (sidecar, scripts)
+  ],
+  excludeGlobs: [
+    '**/node_modules/**',
+    '**/dist/**',
+    '**/build/**',
+    '**/.git/**',
+    '**/coverage/**',
+    '**/.next/**',
+    '**/package-lock.json', // Too large, not useful for search
+    '**/yarn.lock',
+    '**/pnpm-lock.yaml',
+  ],
+  maxFileSizeBytes: 512 * 1024, // 512 KB — skip large generated files
+};

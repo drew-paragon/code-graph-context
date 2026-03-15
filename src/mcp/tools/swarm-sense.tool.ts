@@ -113,6 +113,12 @@ export const createSwarmSenseTool = (server: McpServer): void => {
             'Filter by pheromone types. If empty, returns all types. Options: exploring, modifying, claiming, completed, warning, blocked, proposal, needs_review',
           ),
         nodeIds: z.array(z.string()).optional().describe('Filter by specific node IDs. If empty, searches all nodes.'),
+        filePaths: z
+          .array(z.string())
+          .optional()
+          .describe(
+            'Filter by file paths (resolves to SourceFile nodeIds). Also matches pheromones placed via filePath.',
+          ),
         agentIds: z
           .array(z.string())
           .optional()
@@ -153,6 +159,7 @@ export const createSwarmSenseTool = (server: McpServer): void => {
       projectId,
       types,
       nodeIds,
+      filePaths,
       agentIds,
       swarmId,
       excludeAgentId,
@@ -173,6 +180,22 @@ export const createSwarmSenseTool = (server: McpServer): void => {
       const resolvedProjectId = projectResult.projectId;
 
       try {
+        // Resolve filePaths to nodeIds and merge with any explicit nodeIds
+        if (filePaths?.length) {
+          const resolvedIds: string[] = [...(nodeIds ?? [])];
+          const records = await neo4jService.run(
+            `MATCH (n:SourceFile)
+             WHERE n.projectId = $projectId AND any(fp IN $filePaths WHERE n.filePath ENDS WITH fp)
+             RETURN collect(n.id) as nodeIds`,
+            { projectId: resolvedProjectId, filePaths },
+          );
+          if (records[0]?.nodeIds) {
+            resolvedIds.push(...records[0].nodeIds);
+          }
+          // Also include raw filePaths — catches pheromones placed on new files via filePath
+          resolvedIds.push(...filePaths);
+          nodeIds = resolvedIds;
+        }
         const result: {
           pheromones: any[];
           stats?: any[];

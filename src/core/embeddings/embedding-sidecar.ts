@@ -59,12 +59,14 @@ export class EmbeddingSidecar {
   private acquireSlot(): Promise<void> | void {
     if (this.inflight < this.maxConcurrent) {
       this.inflight++;
-      return;             // fast path — no allocation, no Promise
+      return; // fast path — no allocation, no Promise
     }
-    return new Promise<void>((resolve) => this.waitQueue.push(() => {
-      this.inflight++;
-      resolve();
-    }));
+    return new Promise<void>((resolve) =>
+      this.waitQueue.push(() => {
+        this.inflight++;
+        resolve();
+      }),
+    );
   }
 
   /**
@@ -73,7 +75,7 @@ export class EmbeddingSidecar {
   private releaseSlot(): void {
     this.inflight--;
     const next = this.waitQueue.shift();
-    if (next) next();     // wake one waiter — it will increment inflight
+    if (next) next(); // wake one waiter — it will increment inflight
   }
 
   get baseUrl(): string {
@@ -271,7 +273,9 @@ export class EmbeddingSidecar {
     await this.acquireSlot();
     const queueMs = Date.now() - queuedAt;
     if (queueMs > 100) {
-      console.error(`[embedding-sidecar] Waited ${queueMs}ms for concurrency slot (inflight=${this.inflight}, queued=${this.waitQueue.length})`);
+      console.error(
+        `[embedding-sidecar] Waited ${queueMs}ms for concurrency slot (inflight=${this.inflight}, queued=${this.waitQueue.length})`,
+      );
     }
 
     const controller = new AbortController();
@@ -298,27 +302,35 @@ export class EmbeddingSidecar {
           await this.stop();
         }
 
-        console.error(`[embedding-sidecar] Embed failed after ${Date.now() - startTime}ms: status=${res.status}, texts=${texts.length}, oom=${isOOM}, detail=${detail}`);
+        console.error(
+          `[embedding-sidecar] Embed failed after ${Date.now() - startTime}ms: status=${res.status}, texts=${texts.length}, oom=${isOOM}, detail=${detail}`,
+        );
         throw new Error(`Sidecar embed failed (${res.status}): ${detail}`);
       }
 
       const data = (await res.json()) as { embeddings: number[][]; dimensions: number };
       if (data.dimensions) this._dimensions = data.dimensions;
-      console.error(`[embedding-sidecar] Embedded ${texts.length} texts in ${Date.now() - startTime}ms (dims=${data.dimensions})`);
+      console.error(
+        `[embedding-sidecar] Embedded ${texts.length} texts in ${Date.now() - startTime}ms (dims=${data.dimensions})`,
+      );
       this.resetIdleTimer();
       return data.embeddings;
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
-        console.error(`[embedding-sidecar] Request timed out after ${Date.now() - startTime}ms (limit=${this.config.requestTimeoutMs}ms, texts=${texts.length}), restarting sidecar`);
+        console.error(
+          `[embedding-sidecar] Request timed out after ${Date.now() - startTime}ms (limit=${this.config.requestTimeoutMs}ms, texts=${texts.length}), restarting sidecar`,
+        );
         await this.stop();
         throw new Error(`Embedding request timed out after ${this.config.requestTimeoutMs}ms`);
       }
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[embedding-sidecar] Embed error after ${Date.now() - startTime}ms: ${msg} (url=${this.baseUrl}, running=${this.isRunning}, texts=${texts.length})`);
+      console.error(
+        `[embedding-sidecar] Embed error after ${Date.now() - startTime}ms: ${msg} (url=${this.baseUrl}, running=${this.isRunning}, texts=${texts.length})`,
+      );
       throw err;
     } finally {
       clearTimeout(timeout);
-      this.releaseSlot();   // always release, even on error
+      this.releaseSlot(); // always release, even on error
     }
   }
 

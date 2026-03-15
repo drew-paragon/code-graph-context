@@ -23,7 +23,7 @@ import { ProgressCallback } from '../../core/utils/progress-reporter.js';
 import { getProjectName, UPSERT_PROJECT_QUERY, UPDATE_PROJECT_STATUS_QUERY } from '../../core/utils/project-id.js';
 import { WorkspaceDetector } from '../../core/workspace/index.js';
 import { Neo4jService, QUERIES } from '../../storage/neo4j/neo4j.service.js';
-import { PARSING } from '../constants.js';
+import { PARSING, CONFIG_FILE_PATTERNS } from '../constants.js';
 import { GraphGeneratorHandler } from '../handlers/graph-generator.handler.js';
 import { ParallelImportHandler } from '../handlers/parallel-import.handler.js';
 import { StreamingImportHandler } from '../handlers/streaming-import.handler.js';
@@ -34,6 +34,7 @@ interface WorkerData {
   projectId: string;
   projectType: string;
   chunkSize: number;
+  configFileGlobs?: string[];
 }
 
 interface ProgressMessage {
@@ -197,6 +198,18 @@ const runParser = async (): Promise<void> => {
       totalNodesImported = result.nodesImported;
       totalEdgesImported = result.edgesImported;
     }
+
+    // Ingest config files (JSON, YAML, Dockerfiles, etc.)
+    const configGlobs = config.configFileGlobs ?? CONFIG_FILE_PATTERNS.defaultGlobs;
+    const configResult = await graphGeneratorHandler.ingestConfigFiles(
+      config.projectPath,
+      resolvedProjectId,
+      configGlobs,
+      CONFIG_FILE_PATTERNS.excludeGlobs,
+      CONFIG_FILE_PATTERNS.maxFileSizeBytes,
+    );
+    totalNodesImported += configResult.nodesCreated;
+    await debugLog('Config file ingestion completed', { nodesCreated: configResult.nodesCreated });
 
     await neo4jService.run(UPDATE_PROJECT_STATUS_QUERY, {
       projectId: resolvedProjectId,

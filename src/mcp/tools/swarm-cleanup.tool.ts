@@ -195,7 +195,9 @@ export const createSwarmCleanupTool = (server: McpServer): void => {
             const msgResult = await neo4jService.run(COUNT_MESSAGES_BY_SWARM_QUERY, params);
             messageCount = msgResult[0]?.count ?? 0;
             messageCount =
-              typeof messageCount === 'object' && 'toNumber' in messageCount ? (messageCount as any).toNumber() : messageCount;
+              typeof messageCount === 'object' && 'toNumber' in messageCount
+                ? (messageCount as any).toNumber()
+                : messageCount;
             messageCategories = msgResult[0]?.categories ?? [];
           }
 

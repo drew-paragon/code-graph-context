@@ -4,9 +4,20 @@
  */
 
 import fs from 'fs/promises';
+import path from 'path';
 
-import { Neo4jNode, Neo4jEdge } from '../../core/config/schema.js';
-import { EmbeddingsService, EMBEDDING_BATCH_CONFIG, getEmbeddingDimensions } from '../../core/embeddings/embeddings.service.js';
+import { glob } from 'glob';
+
+import { EXCLUDE_PATTERNS_GLOB } from '../../constants.js';
+import { Neo4jNode, Neo4jEdge, Neo4jNodeProperties, CoreNodeType } from '../../core/config/schema.js';
+import {
+  EmbeddingsService,
+  EMBEDDING_BATCH_CONFIG,
+  getEmbeddingDimensions,
+} from '../../core/embeddings/embeddings.service.js';
+import { normalizeCode } from '../../core/utils/code-normalizer.js';
+import { hashFile } from '../../core/utils/file-utils.js';
+import { generateDeterministicId } from '../../core/utils/graph-factory.js';
 import { Neo4jService, QUERIES } from '../../storage/neo4j/neo4j.service.js';
 import { DEFAULTS } from '../constants.js';
 import { debugLog } from '../utils.js';
@@ -64,7 +75,14 @@ export class GraphGeneratorHandler {
     metadata: any = {},
     skipIndexes = false,
   ): Promise<ImportResult> {
-    await debugLog('Starting graph generation', { nodeCount: nodes.length, edgeCount: edges.length, batchSize, clearExisting, skipIndexes, projectId: this.projectId });
+    await debugLog('Starting graph generation', {
+      nodeCount: nodes.length,
+      edgeCount: edges.length,
+      batchSize,
+      clearExisting,
+      skipIndexes,
+      projectId: this.projectId,
+    });
 
     try {
       console.error(`Generating graph with ${nodes.length} nodes and ${edges.length} edges`);
@@ -95,6 +113,76 @@ export class GraphGeneratorHandler {
       await debugLog('Graph generation error', error);
       throw error;
     }
+  }
+
+  async ingestConfigFiles(
+    projectPath: string,
+    projectId: string,
+    globs: string[],
+    excludeGlobs: string[],
+    maxFileSizeBytes: number,
+    batchSize: number = DEFAULTS.batchSize,
+  ): Promise<{ nodesCreated: number }> {
+    const files = await glob(globs, {
+      cwd: projectPath,
+      ignore: [...EXCLUDE_PATTERNS_GLOB, ...excludeGlobs],
+      absolute: true,
+    });
+
+    console.error(`[config-ingest] Found ${files.length} config files to ingest`);
+
+    const nodes: Neo4jNode[] = [];
+
+    for (const file of files) {
+      const stats = await fs.stat(file);
+      if (stats.size > maxFileSizeBytes) {
+        console.error(`[config-ingest] Skipping ${file} (${stats.size} bytes > ${maxFileSizeBytes})`);
+        continue;
+      }
+
+      const content = await fs.readFile(file, 'utf-8');
+      const name = path.basename(file);
+      const relativePath = path.relative(projectPath, file);
+      const lineCount = content.split('\n').length;
+      const contentHash = await hashFile(file);
+      const nodeId = generateDeterministicId(projectId, CoreNodeType.SOURCE_FILE, relativePath, name);
+
+      let normalizedHash: string | undefined;
+      try {
+        const result = normalizeCode(content);
+        if (result.normalizedHash) normalizedHash = result.normalizedHash;
+      } catch {
+        // Config files may not normalize cleanly — skip
+      }
+
+      const properties: Neo4jNodeProperties = {
+        id: nodeId,
+        projectId,
+        name,
+        coreType: CoreNodeType.SOURCE_FILE,
+        semanticType: 'ConfigFile',
+        filePath: relativePath,
+        sourceCode: content,
+        startLine: 1,
+        endLine: lineCount,
+        createdAt: new Date().toISOString(),
+        size: Number(stats.size),
+        mtime: Number(stats.mtimeMs),
+        contentHash,
+        ...(normalizedHash && { normalizedHash }),
+      };
+
+      nodes.push({
+        id: nodeId,
+        labels: ['SourceFile'],
+        properties,
+      });
+    }
+
+    console.error(`[config-ingest] Importing ${nodes.length} config file nodes`);
+    await this.importNodes(nodes, batchSize);
+
+    return { nodesCreated: nodes.length };
   }
 
   /**
@@ -203,9 +291,12 @@ export class GraphGeneratorHandler {
     // Batch embed all texts that need it
     if (nodesNeedingEmbedding.length > 0) {
       const texts = nodesNeedingEmbedding.map((n) => n.text);
-      const effectiveBatchSize = parseInt(process.env.EMBEDDING_BATCH_SIZE ?? '', 10) || EMBEDDING_BATCH_CONFIG.maxBatchSize;
+      const effectiveBatchSize =
+        parseInt(process.env.EMBEDDING_BATCH_SIZE ?? '', 10) || EMBEDDING_BATCH_CONFIG.maxBatchSize;
       const totalBatches = Math.ceil(texts.length / effectiveBatchSize);
-      console.error(`[embedding] Starting ${texts.length} texts in ~${totalBatches} batches (effective_batch_size=${effectiveBatchSize}, config_max=${EMBEDDING_BATCH_CONFIG.maxBatchSize})`);
+      console.error(
+        `[embedding] Starting ${texts.length} texts in ~${totalBatches} batches (effective_batch_size=${effectiveBatchSize}, config_max=${EMBEDDING_BATCH_CONFIG.maxBatchSize})`,
+      );
 
       try {
         const embeddings = await this.embeddingsService.embedTextsInBatches(texts, EMBEDDING_BATCH_CONFIG.maxBatchSize);

@@ -508,7 +508,8 @@ export const createSwarmClaimTaskTool = (server: McpServer): void => {
 
           if (msgResult.length > 0) {
             pendingMessages = msgResult.map((m: any) => {
-              const ts = typeof m.timestamp === 'object' && m.timestamp?.toNumber ? m.timestamp.toNumber() : m.timestamp;
+              const ts =
+                typeof m.timestamp === 'object' && m.timestamp?.toNumber ? m.timestamp.toNumber() : m.timestamp;
               return {
                 id: m.id,
                 from: m.fromAgentId,
