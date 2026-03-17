@@ -40,12 +40,6 @@ export const createTraverseFromNodeTool = (server: McpServer): void => {
           .optional()
           .describe('Results to skip for pagination')
           .default(DEFAULTS.skipOffset),
-        limit: z
-          .number()
-          .int()
-          .optional()
-          .describe('Maximum results per page')
-          .default(50),
         direction: z
           .enum(['OUTGOING', 'INCOMING', 'BOTH'])
           .optional()
@@ -59,34 +53,22 @@ export const createTraverseFromNodeTool = (server: McpServer): void => {
           .describe(
             'Filter by specific relationship types (e.g., ["INJECTS", "USES_REPOSITORY"]). If not specified, shows all relationships.',
           ),
-        includeCode: z
-          .boolean()
+        displayOptions: z
+          .object({
+            includeCode: z.boolean().optional().default(true).describe('Include source code snippets'),
+            snippetLength: z
+              .number()
+              .int()
+              .optional()
+              .default(DEFAULTS.codeSnippetLength)
+              .describe('Code snippet character limit'),
+            summaryOnly: z.boolean().optional().default(false).describe('Return only file paths and statistics'),
+            maxNodesPerChain: z.number().int().optional().default(5).describe('Maximum chains per depth level'),
+            maxTotalNodes: z.number().int().optional().default(50).describe('Maximum unique nodes across all depths'),
+            limit: z.number().int().optional().default(50).describe('Maximum results per page'),
+          })
           .optional()
-          .describe('Include source code snippets; set false for structure-only view')
-          .default(true),
-        maxNodesPerChain: z
-          .number()
-          .int()
-          .optional()
-          .describe('Maximum chains to show per depth level')
-          .default(5),
-        summaryOnly: z
-          .boolean()
-          .optional()
-          .describe('Return only file paths and statistics, no node details')
-          .default(false),
-        snippetLength: z
-          .number()
-          .int()
-          .optional()
-          .describe('Code snippet character limit')
-          .default(DEFAULTS.codeSnippetLength),
-        maxTotalNodes: z
-          .number()
-          .int()
-          .optional()
-          .describe('Maximum unique nodes to return across all depths')
-          .default(50),
+          .describe('Output formatting options (all have sensible defaults)'),
       },
     },
     async ({
@@ -95,15 +77,19 @@ export const createTraverseFromNodeTool = (server: McpServer): void => {
       filePath,
       maxDepth = DEFAULTS.traversalDepth,
       skip = DEFAULTS.skipOffset,
-      limit = 50,
       direction = 'BOTH',
       relationshipTypes,
-      includeCode = true,
-      maxNodesPerChain = 5,
-      summaryOnly = false,
-      snippetLength = DEFAULTS.codeSnippetLength,
-      maxTotalNodes = 50,
+      displayOptions,
     }) => {
+      const {
+        includeCode = true,
+        snippetLength = DEFAULTS.codeSnippetLength,
+        summaryOnly = false,
+        maxNodesPerChain = 5,
+        maxTotalNodes = 50,
+        limit = 50,
+      } = displayOptions ?? {};
+
       // Validate that either nodeId or filePath is provided
       if (!nodeId && !filePath) {
         return createErrorResponse('Either nodeId or filePath must be provided.');
