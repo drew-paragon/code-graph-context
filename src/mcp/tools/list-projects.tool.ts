@@ -8,7 +8,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { LIST_PROJECTS_QUERY } from '../../core/utils/project-id.js';
 import { Neo4jService } from '../../storage/neo4j/neo4j.service.js';
 import { TOOL_NAMES, TOOL_METADATA } from '../constants.js';
-import { createErrorResponse, createSuccessResponse, debugLog } from '../utils.js';
+import { createEmptyResponse, createErrorResponse, createSuccessResponse, debugLog } from '../utils.js';
 
 interface ProjectInfo {
   projectId: string;
@@ -34,7 +34,10 @@ export const createListProjectsTool = (server: McpServer): void => {
         const results = await neo4jService.run(LIST_PROJECTS_QUERY, {});
 
         if (results.length === 0) {
-          return createSuccessResponse('No projects found. Use parse_typescript_project to add a project first.');
+          return createEmptyResponse(
+            'No projects found in the database',
+            'Use parse_typescript_project to add a project first.',
+          );
         }
 
         const projects: ProjectInfo[] = results.map((r) => ({

@@ -7,7 +7,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 import { TOOL_NAMES, TOOL_METADATA } from '../constants.js';
 import { watchManager } from '../services/watch-manager.js';
-import { createErrorResponse, createSuccessResponse, debugLog } from '../utils.js';
+import { createEmptyResponse, createErrorResponse, createSuccessResponse, debugLog } from '../utils.js';
 
 export const createListWatchersTool = (server: McpServer): void => {
   server.registerTool(
@@ -22,11 +22,9 @@ export const createListWatchersTool = (server: McpServer): void => {
         const watchers = watchManager.listWatchers();
 
         if (watchers.length === 0) {
-          return createSuccessResponse(
-            'No active file watchers.\n\n' +
-              'To start watching a project:\n' +
-              '- Use start_watch_project with a projectId\n' +
-              '- Or use parse_typescript_project with watch: true (requires async: false)',
+          return createEmptyResponse(
+            'No active file watchers',
+            'Use start_watch_project to begin watching, or parse_typescript_project with watch=true.',
           );
         }
 

@@ -11,7 +11,7 @@ import { z } from 'zod';
 
 import { Neo4jService } from '../../storage/neo4j/neo4j.service.js';
 import { TOOL_NAMES, TOOL_METADATA } from '../constants.js';
-import { createErrorResponse, createSuccessResponse, resolveProjectIdOrError, debugLog } from '../utils.js';
+import { createEmptyResponse, createErrorResponse, createSuccessResponse, resolveProjectIdOrError, debugLog } from '../utils.js';
 
 import { TASK_TYPES, TASK_PRIORITIES } from './swarm-constants.js';
 import { PENDING_MESSAGES_FOR_AGENT_QUERY, AUTO_ACKNOWLEDGE_QUERY } from './swarm-message.tool.js';
@@ -77,8 +77,9 @@ export const createSwarmClaimTaskTool = (server: McpServer): void => {
           });
 
           if (!claimResult.data) {
-            return createSuccessResponse(
-              JSON.stringify({ action: 'no_tasks', retryAttempts: claimResult.retryAttempts }),
+            return createEmptyResponse(
+              'No available tasks matching criteria',
+              'Check swarm_get_tasks for task statuses, or post new tasks with swarm_post_task.',
             );
           }
         }

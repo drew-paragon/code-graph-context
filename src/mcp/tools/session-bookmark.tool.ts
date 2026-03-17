@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 import { Neo4jService } from '../../storage/neo4j/neo4j.service.js';
 import { TOOL_NAMES, TOOL_METADATA } from '../constants.js';
-import { createErrorResponse, createSuccessResponse, resolveProjectIdOrError, debugLog } from '../utils.js';
+import { createEmptyResponse, createErrorResponse, createSuccessResponse, resolveProjectIdOrError, debugLog } from '../utils.js';
 
 /**
  * Neo4j query to create a SessionBookmark node and link to code nodes
@@ -270,14 +270,11 @@ export const createRestoreSessionBookmarkTool = (server: McpServer): void => {
         });
 
         if (bookmarkRows.length === 0) {
-          return createSuccessResponse(
-            JSON.stringify({
-              success: false,
-              message: sessionId
-                ? `No bookmark found for session "${sessionId}"${agentId ? ` and agent "${agentId}"` : ''}`
-                : `No bookmarks found for this project${agentId ? ` and agent "${agentId}"` : ''}`,
-              projectId: resolvedProjectId,
-            }),
+          return createEmptyResponse(
+            sessionId
+              ? `No bookmark found for session "${sessionId}" in project ${resolvedProjectId}`
+              : `No bookmarks found for project ${resolvedProjectId}`,
+            'Save a bookmark first with save_session_bookmark, or check the sessionId.',
           );
         }
 

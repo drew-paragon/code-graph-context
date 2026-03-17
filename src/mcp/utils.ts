@@ -64,6 +64,19 @@ export const createSuccessResponse = (text: string): { content: Array<{ type: 't
 };
 
 /**
+ * Standard "no results" response for MCP tools.
+ * Use instead of createSuccessResponse for empty result sets.
+ */
+export const createEmptyResponse = (
+  message: string,
+  suggestion?: string,
+): { content: Array<{ type: 'text'; text: string }> } => {
+  return createSuccessResponse(
+    JSON.stringify({ status: 'empty', message, ...(suggestion && { suggestion }) }),
+  );
+};
+
+/**
  * Result type for code truncation
  */
 export interface TruncateCodeResult {

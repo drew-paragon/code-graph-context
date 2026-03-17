@@ -17,7 +17,7 @@ import {
 } from '../../core/utils/shared-utils.js';
 import { Neo4jService, QUERIES } from '../../storage/neo4j/neo4j.service.js';
 import { TOOL_NAMES, TOOL_METADATA } from '../constants.js';
-import { createErrorResponse, createSuccessResponse, debugLog, resolveProjectIdOrError } from '../utils.js';
+import { createEmptyResponse, createErrorResponse, createSuccessResponse, debugLog, resolveProjectIdOrError } from '../utils.js';
 
 // Types
 type Scope = 'methods' | 'functions' | 'classes' | 'all';
@@ -451,11 +451,18 @@ export const createDetectDuplicateCodeTool = (server: McpServer): void => {
           }
         }
 
+        // Early return for zero results
+        if (totalGroups === 0) {
+          return createEmptyResponse(
+            'No duplicate code found',
+            semanticDiagnostic
+              ? `Semantic analysis note: ${semanticDiagnostic}. Try lowering minSimilarity or changing scope.`
+              : 'Try lowering minSimilarity or broadening scope.',
+          );
+        }
+
         // Build summary with warning if no embeddings
-        let summary =
-          totalGroups === 0
-            ? 'No duplicate code found'
-            : `Found ${totalGroups} duplicate code groups across ${affectedFiles.length} files`;
+        let summary = `Found ${totalGroups} duplicate code groups across ${affectedFiles.length} files`;
 
         if (semanticQueryError) {
           summary += ` (Warning: ${semanticQueryError})`;

@@ -12,6 +12,7 @@ import { NaturalLanguageToCypherService } from '../../core/embeddings/natural-la
 import { Neo4jService } from '../../storage/neo4j/neo4j.service.js';
 import { TOOL_NAMES, TOOL_METADATA, MESSAGES, FILE_PATHS } from '../constants.js';
 import {
+  createEmptyResponse,
   createErrorResponse,
   createSuccessResponse,
   formatQueryResults,
@@ -62,8 +63,9 @@ export const createNaturalLanguageToCypherTool = (server: McpServer): void => {
 
         if (!naturalLanguageToCypherService) {
           await debugLog('Natural language service not available', { projectId: resolvedProjectId, query });
-          return createSuccessResponse(
-            'natural_language_to_cypher requires OPENAI_API_KEY. Set it and restart the MCP server to enable this tool.',
+          return createEmptyResponse(
+            'natural_language_to_cypher requires OPENAI_API_KEY',
+            'Set OPENAI_API_KEY and restart the MCP server to enable this tool.',
           );
         }
 

@@ -11,6 +11,7 @@ import { Neo4jService, QUERIES } from '../../storage/neo4j/neo4j.service.js';
 import { TOOL_NAMES, TOOL_METADATA, DEFAULTS } from '../constants.js';
 import { TraversalHandler } from '../handlers/traversal.handler.js';
 import {
+  createEmptyResponse,
   createErrorResponse,
   createSuccessResponse,
   debugLog,
@@ -109,9 +110,9 @@ export const createSearchCodebaseTool = (server: McpServer): void => {
         });
 
         if (vectorResults.length === 0) {
-          return createSuccessResponse(
-            `No code found with similarity >= ${minSimilarity}. ` +
-              `Try rephrasing your query or lowering the minSimilarity threshold. Query: "${query}"`,
+          return createEmptyResponse(
+            `No code found with similarity >= ${minSimilarity}`,
+            'Try rephrasing your query or lowering the minSimilarity threshold.',
           );
         }
 
@@ -120,9 +121,9 @@ export const createSearchCodebaseTool = (server: McpServer): void => {
 
         if (qualifiedResults.length === 0) {
           const bestScore = vectorResults[0].score;
-          return createSuccessResponse(
-            `No sufficiently relevant code found. Best match score: ${bestScore.toFixed(3)} ` +
-              `(threshold: ${minSimilarity}). Try rephrasing your query.`,
+          return createEmptyResponse(
+            `No sufficiently relevant code found (best match: ${bestScore.toFixed(3)}, threshold: ${minSimilarity})`,
+            'Try rephrasing your query or lowering minSimilarity.',
           );
         }
 
