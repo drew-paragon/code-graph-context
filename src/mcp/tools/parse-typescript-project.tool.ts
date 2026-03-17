@@ -103,17 +103,17 @@ export const createParseTypescriptProjectTool = (server: McpServer): void => {
         configFileGlobs: z
           .array(z.string())
           .optional()
-          .describe('Custom glob patterns for config files (default: all JSON, YAML, .env, Dockerfile, .sh, .py)')
+          .describe('Custom glob patterns for config files')
           .default(CONFIG_FILE_PATTERNS.defaultGlobs),
         projectId: z
           .string()
           .optional()
-          .describe('Optional project ID override. If not provided, auto-generated from projectPath'),
+          .describe('Project ID override; auto-generated from projectPath if omitted'),
         clearExisting: z.boolean().optional().describe('Clear existing graph data for this project first'),
         excludeNodeTypes: z
           .array(z.string())
           .optional()
-          .describe('Node types to skip during parsing, e.g. ["TestFile", "Parameter"]'),
+          .describe('Node types to skip during parsing'),
         projectType: z
           .enum(['nestjs', 'fairsquare', 'both', 'vanilla', 'auto'])
           .optional()
@@ -123,7 +123,7 @@ export const createParseTypescriptProjectTool = (server: McpServer): void => {
           .number()
           .optional()
           .default(100)
-          .describe('Files per chunk for streaming import (default: 50). Set to 0 to disable streaming.'),
+          .describe('Files per chunk for streaming import. Set to 0 to disable streaming.'),
         useStreaming: z
           .enum(['auto', 'always', 'never'])
           .optional()
@@ -133,17 +133,17 @@ export const createParseTypescriptProjectTool = (server: McpServer): void => {
           .boolean()
           .optional()
           .default(true)
-          .describe('Run parsing in background and return job ID immediately. Use check_parse_status to monitor.'),
+          .describe('Run in background and return job ID immediately; poll with check_parse_status'),
         watch: z
           .boolean()
           .optional()
           .default(false)
-          .describe('Start file watching after parse completes. Only works with async: false.'),
+          .describe('Start file watching after parse completes; requires async: false'),
         watchDebounceMs: z
           .number()
           .optional()
           .default(1000)
-          .describe('Debounce delay for watch mode in milliseconds (default: 1000)'),
+          .describe('Debounce delay for watch mode in milliseconds'),
       },
     },
     async ({

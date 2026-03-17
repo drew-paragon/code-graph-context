@@ -151,32 +151,29 @@ export const createDetectDeadCodeTool = (server: McpServer): void => {
       title: TOOL_METADATA[TOOL_NAMES.detectDeadCode].title,
       description: TOOL_METADATA[TOOL_NAMES.detectDeadCode].description,
       inputSchema: {
-        projectId: z.string().describe('Project ID, name, or path (e.g., "backend" or "proj_a1b2c3d4e5f6")'),
+        projectId: z.string().describe('Project ID, name, or path'),
         excludePatterns: z
           .array(z.string())
           .optional()
-          .describe('Additional file patterns to exclude as entry points (e.g., ["*.config.ts", "*.seed.ts"])'),
+          .describe('Additional file patterns to exclude as entry points'),
         excludeSemanticTypes: z
           .array(z.string())
           .optional()
-          .describe('Additional semantic types to exclude (e.g., ["EntityClass", "DTOClass"])'),
+          .describe('Additional semantic types to exclude'),
         includeEntryPoints: z
           .boolean()
           .optional()
-          .describe(
-            'Include excluded entry points in a separate audit section for review (default: true). ' +
-              'Entry points are always excluded from main results.',
-          )
+          .describe('Include excluded entry points in audit section')
           .default(true),
         minConfidence: z
           .enum(['LOW', 'MEDIUM', 'HIGH'])
           .optional()
-          .describe('Minimum confidence level to include in results (default: LOW)')
+          .describe('Minimum confidence threshold for results')
           .default('LOW'),
         summaryOnly: z
           .boolean()
           .optional()
-          .describe('Return only summary statistics without full dead code list (default: false)')
+          .describe('Return summary statistics only, no item list')
           .default(false),
         limit: z
           .number()
@@ -184,31 +181,29 @@ export const createDetectDeadCodeTool = (server: McpServer): void => {
           .min(1)
           .max(500)
           .optional()
-          .describe('Maximum number of dead code items to return per page (default: 100)')
+          .describe('Max dead code items per page')
           .default(100),
         offset: z
           .number()
           .int()
           .min(0)
           .optional()
-          .describe('Number of items to skip for pagination (default: 0)')
+          .describe('Items to skip for pagination')
           .default(0),
         filterCategory: z
           .enum(['library-export', 'ui-component', 'internal-unused', 'all'])
           .optional()
-          .describe('Filter by category: library-export, ui-component, internal-unused, or all (default: all)')
+          .describe('Filter results to a specific category')
           .default('all'),
         excludeLibraryExports: z
           .boolean()
           .optional()
-          .describe('Exclude all items from packages/* directories (default: false)')
+          .describe('Exclude items from packages/* directories')
           .default(false),
         excludeCoreTypes: z
           .array(z.string())
           .optional()
-          .describe(
-            'Exclude specific core types from results (e.g., ["InterfaceDeclaration", "TypeAliasDeclaration"] to skip type definitions)',
-          )
+          .describe('Core types to exclude from results')
           .default([]),
       },
     },

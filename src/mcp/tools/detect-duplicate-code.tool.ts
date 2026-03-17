@@ -148,23 +148,23 @@ export const createDetectDuplicateCodeTool = (server: McpServer): void => {
       title: TOOL_METADATA[TOOL_NAMES.detectDuplicateCode].title,
       description: TOOL_METADATA[TOOL_NAMES.detectDuplicateCode].description,
       inputSchema: {
-        projectId: z.string().describe('Project ID, name, or path (e.g., "backend" or "proj_a1b2c3d4e5f6")'),
+        projectId: z.string().describe('Project ID, name, or path'),
         type: z
           .enum(['structural', 'semantic', 'all'])
           .optional()
-          .describe('Detection approach: structural (AST hash), semantic (embeddings), or all (default: all)')
+          .describe('Detection approach: structural (AST hash), semantic (embeddings), or all')
           .default('all'),
         minSimilarity: z
           .number()
           .min(0.5)
           .max(1.0)
           .optional()
-          .describe('Minimum similarity for semantic duplicates (0.5-1.0, default: 0.80)')
+          .describe('Minimum similarity threshold for semantic duplicates')
           .default(0.8),
         includeCode: z
           .boolean()
           .optional()
-          .describe('Include source code snippets in results (default: false)')
+          .describe('Include source code snippets in results')
           .default(false),
         maxResults: z
           .number()
@@ -172,24 +172,24 @@ export const createDetectDuplicateCodeTool = (server: McpServer): void => {
           .min(1)
           .max(100)
           .optional()
-          .describe('Maximum number of duplicate groups to return (default: 20)')
+          .describe('Max duplicate groups to return')
           .default(20),
         scope: z
           .enum(['methods', 'functions', 'classes', 'all'])
           .optional()
-          .describe('Node types to analyze (default: all)')
+          .describe('Node types to analyze')
           .default('all'),
         summaryOnly: z
           .boolean()
           .optional()
-          .describe('Return only summary statistics without full duplicates list (default: false)')
+          .describe('Return summary statistics only, no duplicates list')
           .default(false),
         offset: z
           .number()
           .int()
           .min(0)
           .optional()
-          .describe('Number of groups to skip for pagination (default: 0)')
+          .describe('Groups to skip for pagination')
           .default(0),
         vectorNeighbors: z
           .number()
@@ -197,9 +197,7 @@ export const createDetectDuplicateCodeTool = (server: McpServer): void => {
           .min(10)
           .max(200)
           .optional()
-          .describe(
-            'Number of vector neighbors to search per node for semantic duplicates (default: 50, higher = more thorough)',
-          )
+          .describe('Vector neighbors per node (higher = more thorough)')
           .default(50),
       },
     },
