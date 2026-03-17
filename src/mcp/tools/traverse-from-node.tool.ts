@@ -32,19 +32,19 @@ export const createTraverseFromNodeTool = (server: McpServer): void => {
           .number()
           .int()
           .optional()
-          .describe(`Maximum depth to traverse (default: ${DEFAULTS.traversalDepth}, max: ${MAX_TRAVERSAL_DEPTH})`)
+          .describe('Maximum relationship traversal depth')
           .default(DEFAULTS.traversalDepth),
         skip: z
           .number()
           .int()
           .optional()
-          .describe(`Number of results to skip for pagination (default: ${DEFAULTS.skipOffset})`)
+          .describe('Results to skip for pagination')
           .default(DEFAULTS.skipOffset),
         limit: z
           .number()
           .int()
           .optional()
-          .describe('Maximum results per page (default: 50). Use with skip for pagination.')
+          .describe('Maximum results per page')
           .default(50),
         direction: z
           .enum(['OUTGOING', 'INCOMING', 'BOTH'])
@@ -62,30 +62,30 @@ export const createTraverseFromNodeTool = (server: McpServer): void => {
         includeCode: z
           .boolean()
           .optional()
-          .describe('Include source code snippets in results (default: true, set to false for structure-only view)')
+          .describe('Include source code snippets; set false for structure-only view')
           .default(true),
         maxNodesPerChain: z
           .number()
           .int()
           .optional()
-          .describe('Maximum chains to show per depth level (default: 5, applied independently at each depth)')
+          .describe('Maximum chains to show per depth level')
           .default(5),
         summaryOnly: z
           .boolean()
           .optional()
-          .describe('Return only summary with file paths and statistics (default: false)')
+          .describe('Return only file paths and statistics, no node details')
           .default(false),
         snippetLength: z
           .number()
           .int()
           .optional()
-          .describe(`Code snippet character length when includeCode is true (default: ${DEFAULTS.codeSnippetLength})`)
+          .describe('Code snippet character limit')
           .default(DEFAULTS.codeSnippetLength),
         maxTotalNodes: z
           .number()
           .int()
           .optional()
-          .describe('Maximum total unique nodes to return across all depths (default: 50). Limits output size.')
+          .describe('Maximum unique nodes to return across all depths')
           .default(50),
       },
     },

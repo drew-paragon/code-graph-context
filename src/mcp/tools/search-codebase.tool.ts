@@ -31,43 +31,41 @@ export const createSearchCodebaseTool = (server: McpServer): void => {
           .number()
           .int()
           .optional()
-          .describe(`Maximum depth to traverse relationships (default: ${DEFAULTS.traversalDepth}, max: 10)`)
+          .describe('Maximum relationship traversal depth')
           .default(DEFAULTS.traversalDepth),
         maxNodesPerChain: z
           .number()
           .int()
           .optional()
-          .describe('Maximum chains to show per depth level (default: 5, applied independently at each depth)')
+          .describe('Maximum chains to show per depth level')
           .default(5),
-        skip: z.number().int().optional().describe('Number of results to skip for pagination (default: 0)').default(0),
+        skip: z.number().int().optional().describe('Results to skip for pagination').default(0),
         includeCode: z
           .boolean()
           .optional()
-          .describe('Include source code snippets in results (default: true)')
+          .describe('Include source code snippets in results')
           .default(true),
         snippetLength: z
           .number()
           .int()
           .optional()
-          .describe(`Length of code snippets to include (default: ${DEFAULTS.codeSnippetLength})`)
+          .describe('Code snippet character limit')
           .default(DEFAULTS.codeSnippetLength),
         topK: z
           .number()
           .int()
           .optional()
-          .describe(
-            'Number of top vector matches to return (default: 3, max: 10). The best match is traversed; others shown as alternatives.',
-          )
+          .describe('Number of top vector matches; best match is traversed, others shown as alternatives')
           .default(3),
         minSimilarity: z
           .number()
           .optional()
-          .describe('Minimum similarity score threshold (0.0-1.0). Results below this are filtered out. Default: 0.65')
+          .describe('Minimum similarity score threshold')
           .default(0.65),
         useWeightedTraversal: z
           .boolean()
           .optional()
-          .describe('Use weighted traversal strategy that scores each node for relevance (default: false)')
+          .describe('Score each traversed node for relevance; higher quality but slower')
           .default(true),
       },
     },

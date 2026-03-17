@@ -92,7 +92,7 @@ export const createImpactAnalysisTool = (server: McpServer): void => {
           .min(1)
           .max(6)
           .optional()
-          .describe('Maximum depth to traverse for transitive dependents (default: 4)')
+          .describe('Maximum depth for transitive dependent traversal')
           .default(4),
         frameworkConfig: FrameworkConfigSchema.optional().describe(
           'Framework-specific configuration for risk scoring. Includes relationshipWeights (e.g., {"INJECTS": 0.9}), highRiskTypes (e.g., ["Controller", "Service"]), and optional name.',
