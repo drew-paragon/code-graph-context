@@ -220,8 +220,8 @@ export const PARSING = {
   streamingThreshold: 100,
   /** Default number of files per chunk */
   defaultChunkSize: 50,
-  /** Worker timeout in milliseconds (60 minutes) */
-  workerTimeoutMs: 60 * 60 * 1000,
+  /** Worker timeout in milliseconds (default: 8 hours, configurable via WORKER_TIMEOUT_HOURS) */
+  workerTimeoutMs: (Number(process.env.WORKER_TIMEOUT_HOURS) || 8) * 60 * 60 * 1000,
 } as const;
 
 // Job Management
