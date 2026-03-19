@@ -403,7 +403,7 @@ export const createParseTypescriptProjectTool = (server: McpServer): void => {
         try {
           // Set projectId for project-scoped operations (clear, indexes)
           graphGeneratorHandler.setProjectId(finalProjectId);
-          const result = await graphGeneratorHandler.generateGraph(outputPath, DEFAULTS.batchSize, clearExisting);
+          const result = await graphGeneratorHandler.generateGraph(outputPath, clearExisting);
 
           // Recreate cross-file edges after incremental parse
           if (!clearExisting && savedCrossFileEdges.length > 0) {

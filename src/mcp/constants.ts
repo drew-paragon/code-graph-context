@@ -205,7 +205,10 @@ Actions: send (post or broadcast), read (retrieve), acknowledge (mark read). Cat
 export const DEFAULTS = {
   traversalDepth: 3,
   skipOffset: 0,
-  batchSize: 500,
+  /** Batch size for node imports (larger payloads due to embeddings) */
+  nodeBatchSize: 500,
+  /** Batch size for edge imports (lightweight — just IDs and type) */
+  edgeBatchSize: 2000,
   maxResultsDisplayed: 30,
   codeSnippetLength: 500, // Reduced from 1000 to control output size
   chainSnippetLength: 700,

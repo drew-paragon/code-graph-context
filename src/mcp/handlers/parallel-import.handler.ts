@@ -168,6 +168,6 @@ export class ParallelImportHandler {
 
   private async importToNeo4j(nodes: Neo4jNode[], edges: Neo4jEdge[]): Promise<void> {
     if (nodes.length === 0 && edges.length === 0) return;
-    await this.graphGeneratorHandler.generateGraphFromData(nodes, edges, 100, false, {}, true);
+    await this.graphGeneratorHandler.generateGraphFromData(nodes, edges, false, {}, true);
   }
 }

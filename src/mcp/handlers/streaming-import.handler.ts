@@ -159,11 +159,11 @@ export class StreamingImportHandler {
   }
 
   private async importChunkToNeo4j(nodes: Neo4jNode[], edges: Neo4jEdge[]): Promise<void> {
-    await this.graphGeneratorHandler.generateGraphFromData(nodes, edges, DEFAULTS.batchSize, false, {}, true);
+    await this.graphGeneratorHandler.generateGraphFromData(nodes, edges, false, {}, true);
   }
 
   private async importEdgesToNeo4j(edges: Neo4jEdge[]): Promise<void> {
     if (edges.length === 0) return;
-    await this.graphGeneratorHandler.generateGraphFromData([], edges, DEFAULTS.batchSize, false, {}, true);
+    await this.graphGeneratorHandler.generateGraphFromData([], edges, false, {}, true);
   }
 }

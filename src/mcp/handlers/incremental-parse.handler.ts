@@ -148,7 +148,7 @@ export const performIncrementalParse = async (
       await debugLog('Incremental parse: starting graph import', {});
       graphHandler.setProjectId(resolvedId);
       try {
-        const result = await graphHandler.generateGraph(outputPath, DEFAULTS.batchSize, false);
+        const result = await graphHandler.generateGraph(outputPath, false);
         nodesImported = result.nodesImported;
         edgesImported = result.edgesImported;
         await debugLog('Incremental parse: graph import completed', { nodesImported, edgesImported });

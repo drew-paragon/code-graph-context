@@ -101,6 +101,10 @@ export const QUERIES = {
   CREATE_PROJECT_ID_INDEX_SOURCEFILE:
     'CREATE INDEX project_id_sourcefile_idx IF NOT EXISTS FOR (n:SourceFile) ON (n.projectId, n.id)',
 
+  // Create composite index on GraphNode for efficient edge resolution lookups
+  CREATE_PROJECT_ID_INDEX_GRAPHNODE:
+    'CREATE INDEX project_id_graphnode_idx IF NOT EXISTS FOR (n:GraphNode) ON (n.projectId, n.id)',
+
   // Create index on normalizedHash for efficient structural duplicate detection
   CREATE_NORMALIZED_HASH_INDEX: 'CREATE INDEX normalized_hash_idx IF NOT EXISTS FOR (n:Embedded) ON (n.normalizedHash)',
 
@@ -112,8 +116,8 @@ export const QUERIES = {
 
   CREATE_RELATIONSHIP: `
     UNWIND $edges AS edgeData
-    MATCH (start) WHERE start.id = edgeData.startNodeId AND start.projectId = $projectId
-    MATCH (end) WHERE end.id = edgeData.endNodeId AND end.projectId = $projectId
+    MATCH (start:GraphNode) WHERE start.id = edgeData.startNodeId AND start.projectId = $projectId
+    MATCH (end:GraphNode) WHERE end.id = edgeData.endNodeId AND end.projectId = $projectId
     WITH start, end, edgeData
     CALL apoc.create.relationship(start, edgeData.type, edgeData.properties, end) YIELD rel
     RETURN count(*) as created

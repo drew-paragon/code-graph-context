@@ -36,6 +36,7 @@ interface ImportResult {
 
 export class GraphGeneratorHandler {
   private static readonly EMBEDDED_LABEL = 'Embedded';
+  private static readonly GRAPH_NODE_LABEL = 'GraphNode';
   private projectId: string | null = null;
 
   constructor(
@@ -52,12 +53,11 @@ export class GraphGeneratorHandler {
 
   async generateGraph(
     graphJsonPath: string,
-    batchSize: number = DEFAULTS.batchSize,
     clearExisting = true,
   ): Promise<ImportResult> {
     console.error(`Generating graph from JSON file: ${graphJsonPath}`);
     const graphData = await this.loadGraphData(graphJsonPath);
-    return this.generateGraphFromData(graphData.nodes, graphData.edges, batchSize, clearExisting, graphData.metadata);
+    return this.generateGraphFromData(graphData.nodes, graphData.edges, clearExisting, graphData.metadata);
   }
 
   /**
@@ -70,7 +70,6 @@ export class GraphGeneratorHandler {
   async generateGraphFromData(
     nodes: Neo4jNode[],
     edges: Neo4jEdge[],
-    batchSize: number = DEFAULTS.batchSize,
     clearExisting = true,
     metadata: any = {},
     skipIndexes = false,
@@ -78,7 +77,8 @@ export class GraphGeneratorHandler {
     await debugLog('Starting graph generation', {
       nodeCount: nodes.length,
       edgeCount: edges.length,
-      batchSize,
+      nodeBatchSize: DEFAULTS.nodeBatchSize,
+      edgeBatchSize: DEFAULTS.edgeBatchSize,
       clearExisting,
       skipIndexes,
       projectId: this.projectId,
@@ -94,8 +94,8 @@ export class GraphGeneratorHandler {
       if (!skipIndexes) {
         await this.createProjectIndexes();
       }
-      await this.importNodes(nodes, batchSize);
-      await this.importEdges(edges, batchSize);
+      await this.importNodes(nodes);
+      await this.importEdges(edges);
       if (!skipIndexes) {
         await this.createVectorIndexes();
       }
@@ -121,7 +121,6 @@ export class GraphGeneratorHandler {
     globs: string[],
     excludeGlobs: string[],
     maxFileSizeBytes: number,
-    batchSize: number = DEFAULTS.batchSize,
   ): Promise<{ nodesCreated: number }> {
     const files = await glob(globs, {
       cwd: projectPath,
@@ -180,7 +179,7 @@ export class GraphGeneratorHandler {
     }
 
     console.error(`[config-ingest] Importing ${nodes.length} config file nodes`);
-    await this.importNodes(nodes, batchSize);
+    await this.importNodes(nodes);
 
     return { nodesCreated: nodes.length };
   }
@@ -216,6 +215,7 @@ export class GraphGeneratorHandler {
     await this.neo4jService.run(QUERIES.CREATE_PROJECT_INDEX_SOURCEFILE);
     await this.neo4jService.run(QUERIES.CREATE_PROJECT_ID_INDEX_EMBEDDED);
     await this.neo4jService.run(QUERIES.CREATE_PROJECT_ID_INDEX_SOURCEFILE);
+    await this.neo4jService.run(QUERIES.CREATE_PROJECT_ID_INDEX_GRAPHNODE);
     await this.neo4jService.run(QUERIES.CREATE_NORMALIZED_HASH_INDEX);
     await this.neo4jService.run(QUERIES.CREATE_SESSION_BOOKMARK_INDEX);
     await this.neo4jService.run(QUERIES.CREATE_SESSION_NOTE_INDEX);
@@ -223,8 +223,9 @@ export class GraphGeneratorHandler {
     await debugLog('Project indexes created');
   }
 
-  private async importNodes(nodes: Neo4jNode[], batchSize: number): Promise<void> {
-    console.error(`Importing ${nodes.length} nodes with embeddings...`);
+  private async importNodes(nodes: Neo4jNode[]): Promise<void> {
+    const batchSize = DEFAULTS.nodeBatchSize;
+    console.error(`Importing ${nodes.length} nodes with embeddings (batch size: ${batchSize})...`);
 
     // Pipelined: write batch N to Neo4j while embedding batch N+1.
     // This overlaps GPU work with Neo4j I/O.
@@ -279,7 +280,7 @@ export class GraphGeneratorHandler {
         // Node doesn't need embedding - prepare it immediately
         nodeResults[index] = {
           ...node,
-          labels: node.labels,
+          labels: [...node.labels, GraphGeneratorHandler.GRAPH_NODE_LABEL],
           properties: {
             ...this.flattenProperties(node.properties),
             embedding: null,
@@ -308,7 +309,7 @@ export class GraphGeneratorHandler {
           if (embedding) embeddedCount++;
           nodeResults[item.index] = {
             ...item.node,
-            labels: embedding ? [...item.node.labels, GraphGeneratorHandler.EMBEDDED_LABEL] : item.node.labels,
+            labels: embedding ? [...item.node.labels, GraphGeneratorHandler.EMBEDDED_LABEL, GraphGeneratorHandler.GRAPH_NODE_LABEL] : [...item.node.labels, GraphGeneratorHandler.GRAPH_NODE_LABEL],
             properties: {
               ...this.flattenProperties(item.node.properties),
               embedding,
@@ -333,8 +334,9 @@ export class GraphGeneratorHandler {
     return nodeResults;
   }
 
-  private async importEdges(edges: any[], batchSize: number): Promise<void> {
-    console.error(`Importing ${edges.length} edges using APOC...`);
+  private async importEdges(edges: any[]): Promise<void> {
+    const batchSize = DEFAULTS.edgeBatchSize;
+    console.error(`Importing ${edges.length} edges using APOC (batch size: ${batchSize})...`);
 
     for (let i = 0; i < edges.length; i += batchSize) {
       const batch = edges.slice(i, i + batchSize).map((edge) => ({
