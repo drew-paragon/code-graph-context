@@ -14,7 +14,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import { CORE_TYPESCRIPT_SCHEMA } from '../../core/config/schema.js';
-import { stopEmbeddingSidecar } from '../../core/embeddings/embedding-sidecar.js';
+import { getEmbeddingSidecar, stopEmbeddingSidecar } from '../../core/embeddings/embedding-sidecar.js';
 import { EmbeddingsService } from '../../core/embeddings/embeddings.service.js';
 import { ParserFactory, ProjectType } from '../../core/parsers/parser-factory.js';
 import { detectChangedFiles } from '../../core/utils/file-change-detection.js';
@@ -182,6 +182,21 @@ export const createParseTypescriptProjectTool = (server: McpServer): void => {
         if (asyncMode) {
           const jobId = jobManager.createJob(projectPath, resolvedProjectId);
           jobManager.startJob(jobId);
+
+          // Pre-warm the embedding sidecar on the main MCP thread BEFORE spawning
+          // the parse Worker. If the Worker spawns the Python subprocess itself,
+          // the fd setup briefly disturbs the stdio pipe to Claude Code and the
+          // harness SIGTERMs the server mid-parse. Starting here means the Worker
+          // sees the sidecar already healthy on localhost and skips subprocess spawn.
+          try {
+            await getEmbeddingSidecar().start();
+            await debugLog('Embedding sidecar pre-warmed on main thread before async parse', { jobId });
+          } catch (sidecarError) {
+            await debugLog('Embedding sidecar pre-warm failed, continuing anyway', {
+              jobId,
+              error: sidecarError instanceof Error ? sidecarError.message : String(sidecarError),
+            });
+          }
 
           // Get path to worker script
           const __filename = fileURLToPath(import.meta.url);
