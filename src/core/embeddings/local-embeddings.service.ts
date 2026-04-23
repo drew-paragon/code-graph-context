@@ -56,7 +56,9 @@ export class LocalEmbeddingsService {
       let results: number[][] | undefined;
       let lastError: Error | undefined;
 
-      // Retry once on transient failures (sidecar crash, connection refused)
+      // Retry transient failures with plain HTTP. Do NOT stop/start the sidecar —
+      // when the sidecar is externally managed, stop() is a no-op and the fresh
+      // spawn from start() can't bind port 8787, causing a 120s startup timeout.
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
           results = await sidecar.embed(batch, gpuBatchSize);
@@ -71,10 +73,8 @@ export class LocalEmbeddingsService {
 
           if (isTransient && attempt === 0) {
             console.error(
-              `[embedding] Transient failure on batch ${batchNum}/${httpBatches} (${lastError.message}), restarting sidecar and retrying...`,
+              `[embedding] Transient failure on batch ${batchNum}/${httpBatches} (${lastError.message}), retrying...`,
             );
-            await sidecar.stop();
-            await sidecar.start();
             continue;
           }
 
