@@ -25,7 +25,7 @@ const DEFAULT_CONFIG: SidecarConfig = {
   port: parseInt(process.env.EMBEDDING_SIDECAR_PORT ?? '', 10) || 8787,
   host: '127.0.0.1',
   model: process.env.EMBEDDING_MODEL ?? 'codesage/codesage-base-v2',
-  startupTimeoutMs: 120_000, // 2 min — first run downloads the model
+  startupTimeoutMs: parseInt(process.env.EMBEDDING_STARTUP_TIMEOUT_MS ?? '', 10) || 120_000,
   requestTimeoutMs: parseInt(process.env.EMBEDDING_REQUEST_TIMEOUT_MS ?? '', 10) || 120_000,
   idleTimeoutMs: parseInt(process.env.EMBEDDING_IDLE_TIMEOUT_MS ?? '', 10) || 600_000, // 10 min — auto-shutdown after no requests
 };
